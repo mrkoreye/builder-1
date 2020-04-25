@@ -1,6 +1,6 @@
 import { GetContentOptions, Builder, builder } from '@builder.io/sdk'
 
-const importReact = () => import('@builder.io/react')
+const importReact = () => import('@builder.io/react' as any)
 const importShopify = () => import('@builder.io/shopify/react')
 const importShopifyJs = () => import('@builder.io/shopify/js')
 const importWidgets = () => import('@builder.io/widgets')
@@ -60,7 +60,46 @@ if (Builder.isBrowser && !customElements.get(componentName)) {
     }
   }
 
+  const forceLoadFonts = () => {
+    const apiStyles = Array.from(
+      document.querySelectorAll('.builder-api-styles')
+    )
+
+    if (!apiStyles.length || !document.fonts) {
+      return
+    }
+
+    apiStyles.forEach(element => {
+      console.log('ITERATING OVER API STYLES')
+      const styles = element.innerHTML
+      styles.replace(
+        /(@font-face\s*{\s*font-family:\s*(.*?);[\s\S]+?url\((\S+)\)[\s\S]+?})/g,
+        (fullMatch, fontMatch, fontName, fontUrl) => {
+          const trimmedFontUrl = fontUrl
+            .replace('"', '')
+            .replace(/'/g, '')
+            .trim()
+
+          const trimmedFontName = fontName
+            .replace('"', '')
+            .replace(/'/g, '')
+            .trim()
+
+          const font = new FontFace(trimmedFontName, `url(${trimmedFontUrl})`)
+
+          if (!document.fonts.has(font)) {
+            document.fonts.add(font)
+          }
+
+          return ''
+        }
+      )
+    })
+  }
+
   const inject = () => {
+    forceLoadFonts()
+
     const selector = '.builder-component-wrap.builder-to-embed'
     const matches = document.querySelectorAll(selector)
     for (let i = 0; i < matches.length; i++) {
